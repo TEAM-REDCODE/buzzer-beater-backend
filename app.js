@@ -1,10 +1,4 @@
-// app.js
-const express = require('express');
-
-const { sequelize } = require('./models/index'); // 시퀄라이즈
-
-const app = express();
-app.set('port', process.env.PORT || 3001);
+const { sequelize } = require('./models'); // 시퀄라이즈
 
 // 서버 실행시 MYSQL 과 연결
 sequelize.sync({ force: false }) // 서버 실행시마다 테이블을 재생성할건지에 대한 여부
