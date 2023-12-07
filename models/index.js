@@ -11,14 +11,19 @@ const db = {}
 
 const sequelize = new Sequelize(config.database, config.username, config.password, config)
 
-db.User = User
-db.Meet = Meet
-db.Meet = Meet
-
 db.sequelize = sequelize
 db.Sequelize = Sequelize
 
-User.initiate()
-Meet.initiate()
+db.User = User
+db.Meet = Meet
+db.Merc = Merc
+
+User.initiate(sequelize)
+Meet.initiate(sequelize)
+Merc.initiate(sequelize)
+
+User.associate(db)
+Meet.associate(db)
+Merc.associate(db)
 
 module.exports = db

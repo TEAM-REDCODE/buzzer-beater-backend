@@ -31,10 +31,13 @@ module.exports = class Meet extends Sequelize.Model{
             }
         }, {
             sequelize,
-            modelName: 'Meets',
+            modelName: 'Meet',
             timestamps: true,  // timestamps 옵션을 추가하여 createdAt 및 updatedAt을 자동으로 관리
             underscored: true,  // underscored 옵션을 추가하여 카멜케이스가 아닌 스네이크케이스로 컬럼 이름을 생성
         });
     }
-    // todo: add associate options
+
+    static associate(db){
+        db.Meet.belongsToMany(db.User, {through: 'UserMeet'})
+    }
 }
