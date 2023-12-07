@@ -5,12 +5,14 @@ const config = require('../config/config')[env]
 
 const User = require('./user')
 const Meet = require('./meet')
+const Merc = require('./merc')
 
 const db = {}
 
 const sequelize = new Sequelize(config.database, config.username, config.password, config)
 
 db.User = User
+db.Meet = Meet
 db.Meet = Meet
 
 db.sequelize = sequelize
