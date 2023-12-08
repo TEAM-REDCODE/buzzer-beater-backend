@@ -65,15 +65,16 @@ router.post('/login',  async (req, res) => {
         console.log('Login!')
 
         const refreshToken = generateRefreshToken(user)
+
+        res.cookie('accessToken', generateToken(user),
+            { httpOnly: true });
+        res.cookie('refreshToken', refreshToken, { httpOnly: true })
+
         await Jwt.updateRefresh({user_id: user._id, refreshToken: refreshToken})
 
         res.status(200).json({
             message: 'Login successful',
-            nickname: user.nickname,
-            jwt: {
-                accessToken: generateToken(user),
-                refreshToken: refreshToken
-            }
+            nickname: user.nickname
         });
     } catch (error){
         console.error(error)
@@ -83,9 +84,27 @@ router.post('/login',  async (req, res) => {
 
 router.get('/refresh', refresh)
 
+router.get('/logout', async (req, res) => {
+    try {
+        const authToken = req.cookies.get('accessToken')
+        const accessResult = accessVerify(authToken)
+
+        if (accessResult.ok) {
+            res.clearCookie('accessToken', { path: '/' })
+            res.status(200).json({ message: 'Logout successful' });
+        }
+        else {
+            res.status(401).json({ message: 'Invalid access token' })
+        }
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({error: 'Internal Sever Error'});
+    }
+})
+
 router.put('/nickname', async (req, res) => {
     try {
-        const authToken = req.headers.authorization.split("Bearer ")[1];
+        const authToken = req.cookies.get('accessToken')
         const nickname = req.body.nickname
         const accessResult = accessVerify(authToken)
 
@@ -108,7 +127,7 @@ router.put('/nickname', async (req, res) => {
 
 router.put('/height', async (req, res) => {
     try {
-        const authToken = req.headers.authorization.split("Bearer ")[1];
+        const authToken = req.cookies.get('accessToken')
         const height = req.body.height
         const accessResult = accessVerify(authToken)
 
