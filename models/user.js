@@ -79,4 +79,25 @@ module.exports = class User extends Sequelize.Model{
             throw error;
         }
     }
+
+    static async changeHeightById(user_id, height) {
+        try{
+            const upDateUser = await this.update(
+                { height: height },
+                {
+                    where: {
+                        _id: user_id
+                    }
+                }
+            )
+            if (upDateUser[0] === 1) {
+                console.log(`Height updated for user with id ${user_id}`);
+            } else {
+                console.log('User not found or update failed');
+            }
+        } catch (error){
+            console.error(`Error updating height: ${error.message}`);
+            throw error;
+        }
+    }
 }

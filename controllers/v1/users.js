@@ -9,7 +9,6 @@ router.use(express.json())
 const { User } = require('../../models')
 
 router.post('/signup', async (req, res)=>{
-
     try{
         const {nickname, password, email, height, mainPosition} = req.body
         const existingUser = await User.findOne({
@@ -46,7 +45,6 @@ router.post('/signup', async (req, res)=>{
 });
 
 router.post('/login',  async (req, res) => {
-
     try{
         const { email, password } = req.body
         const user = await User.findOne({
@@ -108,6 +106,27 @@ router.put('/nickname', async (req, res) => {
     }
 })
 
+router.put('/height', async (req, res) => {
+    try {
+        const authToken = req.headers.authorization.split("Bearer ")[1];
+        const height = req.body.height
+        const accessResult = accessVerify(authToken)
 
+        if (accessResult.ok) {
+            try {
+                await User.changeHeightById(accessResult.user_id, height);
+                res.status(204).send();
+            } catch (error) {
+                console.error(`Error updating height: ${error.message}`);
+                res.status(500).send({ error: 'Internal Server Error' });
+            }
+        } else {
+            res.status(400).send();
+        }
+    } catch (error){
+        console.error(error)
+        res.status(500).json({error: 'Internal Sever Error'});
+    }
+})
 
 module.exports = router
