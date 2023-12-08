@@ -1,7 +1,8 @@
 const express = require('express');
 const asyncify = require('express-asyncify');
 const bcrypt = require('bcrypt')
-const { generateToken, verifyToken } = require('../../middlewares/jwt')
+const { generateToken, generateRefreshToken, refresh} = require('../../middlewares/jwt')
+const Jwt = require('../../models/jwt')
 
 const router = asyncify(express.Router());
 
@@ -30,15 +31,9 @@ router.post('/signup', async (req, res)=>{
             mainPosition: mainPosition
         });
 
-        const newUserToken = generateToken(newUser)
-
         console.log("Data is created!")
         res.status(201).json({
             message: 'User registration successful',
-            jwt: {
-                accessToken: newUserToken.accessToken,
-                refreshToken: newUserToken.refreshToken
-            }
         });
     } catch (error){
         console.error(error)
@@ -69,15 +64,17 @@ router.post('/login',  async (req, res) => {
             return res.status(401).json({ error: 'Invalid password' });
         }
 
-        const userToken = generateToken(user)
-
         console.log('Login!')
+
+        const refreshToken = generateRefreshToken()
+        await Jwt.updateRefresh({user_id: user._id, refreshToken: refreshToken})
+
         res.status(200).json({
             message: 'Login successful',
             nickname: user.nickname,
             jwt: {
-                accessToken: userToken.accessToken,
-                refreshToken: userToken.refreshToken
+                accessToken: generateToken(user),
+                refreshToken: refreshToken
             }
         });
     } catch (error){
@@ -85,5 +82,7 @@ router.post('/login',  async (req, res) => {
         res.status(500).json({error: 'Internal Sever Error'});
     }
 })
+
+router.get('/refresh', refresh)
 
 module.exports = router

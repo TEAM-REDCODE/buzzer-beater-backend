@@ -6,6 +6,7 @@ const config = require('../config/config')[env]
 const User = require('./user')
 const Meet = require('./meet')
 const Merc = require('./merc')
+const Jwt = require('./jwt')
 
 const db = {}
 
@@ -17,10 +18,12 @@ db.Sequelize = Sequelize
 db.User = User
 db.Meet = Meet
 db.Merc = Merc
+db.Jwt = Jwt
 
 User.initiate(sequelize)
 Meet.initiate(sequelize)
 Merc.initiate(sequelize)
+Jwt.initiate(sequelize)
 
 User.associate(db)
 Meet.associate(db)
