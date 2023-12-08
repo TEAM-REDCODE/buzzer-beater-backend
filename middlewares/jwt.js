@@ -20,14 +20,14 @@ const generateToken = (user) => {
     return accessToken
 }
 
-const generateRefreshToken = (user) => {
+const generateRefreshToken = async (user) => {
     const refreshToken = jwt.sign({}, secret.TOKEN_SECRET, {
             subject: "Buzzer-Beater RefreshToken",
             algorithm: "HS256",
             expiresIn: 14 * 24 * 60 * 60 // 2주
         });
 
-    const newRefreshToken = Jwt.create({
+    await Jwt.create({
         user_id: user._id,
         refreshToken: refreshToken
     });
@@ -38,10 +38,10 @@ const generateRefreshToken = (user) => {
 }
 
 const refresh = async (req, res) => {
-    if (req.headers.authorization && req.headers.refresh){
-        const authToken = req.headers.authorization.split("Bearer ")[1];
-        const refreshToken = req.headers.refresh
+    const authToken = req.cookies.get('accessToken')
+    const refreshToken = req.cookies.get('refreshToken')
 
+    if (authToken && refreshToken){
         // access token 검증 - expired여야 함
         const authResult = verify(authToken)
 
@@ -72,12 +72,11 @@ const refresh = async (req, res) => {
                 // 2. access token이 만료되고 refresh token이 유효한 경우 -> 새로운 access token 발급
                 const newAccessToken = generateRefreshToken({ _id: decoded.user_id, nickname: decoded.nickname })
 
+                res.cookie('accessToken', newAccessToken, { httpOnly: true })
+                res.cookie('refreshToken', refreshToken, { httpOnly: true })
+
                 res.status(200).send({
                     ok: true,
-                    data: {
-                        accessToken: newAccessToken,
-                        refreshToken: refreshToken
-                    }
                 })
             }
         } else{
