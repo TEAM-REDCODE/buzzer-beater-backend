@@ -1,15 +1,15 @@
 require('dotenv').config({path: '../.env'})
 const jwt = require('jsonwebtoken')
+const { Jwt } = require('../models')
 const { verify, refreshVerify} = require('./jwt-util')
-const {decode} = require("jsonwebtoken");
 
-const secret = process.env.TOKEN_SECRET
+const secret = process.env
 
 const generateToken = (user) => {
     const accessToken = jwt.sign({
         user_id: user._id,
         nickname: user.nickname
-    }, secret, {
+    }, secret.TOKEN_SECRET, {
         subject: "Buzzer-Beater AccessToken",
         algorithm: "HS256",
         expiresIn: 60*60 // 1시간
@@ -20,13 +20,17 @@ const generateToken = (user) => {
     return accessToken
 }
 
-const generateRefreshToken = () => {
-    const refreshToken = jwt.sign({},
-        secret, {
+const generateRefreshToken = (user) => {
+    const refreshToken = jwt.sign({}, secret.TOKEN_SECRET, {
             subject: "Buzzer-Beater RefreshToken",
             algorithm: "HS256",
             expiresIn: 14 * 24 * 60 * 60 // 2주
         });
+
+    const newRefreshToken = Jwt.create({
+        user_id: user._id,
+        refreshToken: refreshToken
+    });
 
     console.log("refreshToken is successfully generated!")
 
@@ -66,7 +70,7 @@ const refresh = async (req, res) => {
                 })
             } else {
                 // 2. access token이 만료되고 refresh token이 유효한 경우 -> 새로운 access token 발급
-                const newAccessToken = jwt.sign({ _id: decoded.user_id, nickname: decoded.nickname })
+                const newAccessToken = generateRefreshToken({ _id: decoded.user_id, nickname: decoded.nickname })
 
                 res.status(200).send({
                     ok: true,
@@ -94,7 +98,7 @@ const refresh = async (req, res) => {
 
 const accessVerify = (token) => {
     try {
-        const decoded = jwt.verify(token, secret)
+        const decoded = jwt.verify(token, secret.TOKEN_SECRET)
         return {
             ok: true,
             user_id: decoded.user_id

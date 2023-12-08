@@ -1,17 +1,17 @@
 const express = require('express');
-const asyncify = require('express-asyncify');
 const bcrypt = require('bcrypt')
 const { generateToken, generateRefreshToken, refresh, accessVerify } = require('../../middlewares/jwt')
 const Jwt = require('../../models/jwt')
 
-const router = asyncify(express.Router());
+const router = express.Router();
+router.use(express.json())
 
-const { User } = require('../../models/user')
+const { User } = require('../../models')
 
 router.post('/signup', async (req, res)=>{
-    const {nickname, password, email, height, mainPosition} = req.body
 
     try{
+        const {nickname, password, email, height, mainPosition} = req.body
         const existingUser = await User.findOne({
             where: {
                 email: email
@@ -46,9 +46,9 @@ router.post('/signup', async (req, res)=>{
 });
 
 router.post('/login',  async (req, res) => {
-    const { email, password } = req.body
 
     try{
+        const { email, password } = req.body
         const user = await User.findOne({
             where: {
                 email: email
@@ -66,7 +66,7 @@ router.post('/login',  async (req, res) => {
 
         console.log('Login!')
 
-        const refreshToken = generateRefreshToken()
+        const refreshToken = generateRefreshToken(user)
         await Jwt.updateRefresh({user_id: user._id, refreshToken: refreshToken})
 
         res.status(200).json({
@@ -86,20 +86,25 @@ router.post('/login',  async (req, res) => {
 router.get('/refresh', refresh)
 
 router.put('/nickname', async (req, res) => {
-    const authToken = req.headers.authorization.split("Bearer ")[1];
-    const nickname = req.body.nickname
-    const accessResult = accessVerify(authToken)
+    try {
+        const authToken = req.headers.authorization.split("Bearer ")[1];
+        const nickname = req.body.nickname
+        const accessResult = accessVerify(authToken)
 
-    if (accessResult.ok) {
-        try {
-            await User.changeNicknameById(accessResult.user_id, nickname);
-            res.status(204).send();
-        } catch (error) {
-            console.error(`Error updating nickname: ${error.message}`);
-            res.status(500).send({ error: 'Internal Server Error' });
+        if (accessResult.ok) {
+            try {
+                await User.changeNicknameById(accessResult.user_id, nickname);
+                res.status(204).send();
+            } catch (error) {
+                console.error(`Error updating nickname: ${error.message}`);
+                res.status(500).send({ error: 'Internal Server Error' });
+            }
+        } else {
+            res.status(400).send();
         }
-    } else {
-        res.status(400).send();
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({error: 'Internal Sever Error'});
     }
 })
 

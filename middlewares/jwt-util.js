@@ -3,14 +3,14 @@ require('dotenv').config({path: '../.env'})
 const jwt = require("jsonwebtoken");
 const Jwt = require('../models/jwt')
 
-const secret = process.env.TOKEN_SECRET
+const secret = process.env
 
 module.exports = {
     /** Access Token 유효성 검증 유효한 토큰일 시, 복호화 정보 제공 **/
     verify: (token) => {
         let decoded = null
         try {
-            decoded = jwt.verify(token, secret)
+            decoded = jwt.verify(token, secret.TOKEN_SECRET)
             return {
                 ok: true,
                 nickname: decoded.nickname,
@@ -30,7 +30,7 @@ module.exports = {
             const data = await Jwt.findToken(user_id)
             if (token === data.refreshToken) {
                 try {
-                    jwt.verify(token, secret)
+                    jwt.verify(token, secret.TOKEN_SECRET)
                     return true
                 } catch (error) {
                     return false

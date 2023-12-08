@@ -1,7 +1,7 @@
 const { Sequelize, DataTypes } = require("sequelize")
 
 module.exports = class Merc extends Sequelize.Model{
-    static initiate(sequelize){
+    static initialize(sequelize){
         return super.init({
             _id: {
                 type: DataTypes.UUID,

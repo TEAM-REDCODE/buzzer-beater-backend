@@ -20,10 +20,10 @@ db.Meet = Meet
 db.Merc = Merc
 db.Jwt = Jwt
 
-User.initiate(sequelize)
-Meet.initiate(sequelize)
-Merc.initiate(sequelize)
-Jwt.initiate(sequelize)
+User.initialize(sequelize)
+Meet.initialize(sequelize)
+Merc.initialize(sequelize)
+Jwt.initialize(sequelize)
 
 User.associate(db)
 Meet.associate(db)

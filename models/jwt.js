@@ -1,7 +1,7 @@
 const { Sequelize, DataTypes} = require("sequelize")
 
 module.exports = class Jwt extends Sequelize.Model{
-    static initiate(sequelize){
+    static initialize(sequelize){
         return super.init({
             _id: {
                 type: DataTypes.UUID,
@@ -33,7 +33,7 @@ module.exports = class Jwt extends Sequelize.Model{
         })
     }
 
-    static updateRefresh = async ({user_id, refreshToken}) => {
+    static async updateRefresh({user_id, refreshToken}){
         try {
             const updatedJwt = await this.update(
                 { refreshToken: refreshToken }, // 업데이트할 필드 및 값
