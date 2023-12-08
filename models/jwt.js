@@ -26,7 +26,7 @@ module.exports = class Jwt extends Sequelize.Model{
     }
 
     static async findToken(user_id){
-        return await Jwt.findOne({
+        return await this.findOne({
             where: {
                 user_id: user_id
             }
@@ -35,7 +35,7 @@ module.exports = class Jwt extends Sequelize.Model{
 
     static updateRefresh = async ({user_id, refreshToken}) => {
         try {
-            const updatedJwt = await Jwt.update(
+            const updatedJwt = await this.update(
                 { refreshToken: refreshToken }, // 업데이트할 필드 및 값
                 {
                     where: {

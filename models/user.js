@@ -58,4 +58,25 @@ module.exports = class User extends Sequelize.Model{
         db.User.belongsToMany(db.Meet, {through: 'UserMeet'})
         db.User.hasOne(db.Merc, {foreignKey: 'UserId',sourceKey:'_id'});
     }
+
+    static async changeNicknameById(user_id, nickname){
+        try{
+            const upDateUser = await this.update(
+                { nickname: nickname },
+                {
+                    where: {
+                        _id: user_id
+                    }
+                }
+            )
+            if (upDateUser[0] === 1) {
+                console.log(`Nickname updated for user with id ${user_id}`);
+            } else {
+                console.log('User not found or update failed');
+            }
+        } catch (error){
+            console.error(`Error updating nickname: ${error.message}`);
+            throw error;
+        }
+    }
 }

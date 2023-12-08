@@ -1,7 +1,7 @@
 const express = require('express');
 const asyncify = require('express-asyncify');
 const bcrypt = require('bcrypt')
-const { generateToken, generateRefreshToken, refresh} = require('../../middlewares/jwt')
+const { generateToken, generateRefreshToken, refresh, accessVerify } = require('../../middlewares/jwt')
 const Jwt = require('../../models/jwt')
 
 const router = asyncify(express.Router());
@@ -84,5 +84,23 @@ router.post('/login',  async (req, res) => {
 })
 
 router.get('/refresh', refresh)
+
+router.put('/nickname', async (req, res) => {
+    const authToken = req.headers.authorization.split("Bearer ")[1];
+    const nickname = req.body.nickname
+    const accessResult = accessVerify(authToken)
+
+    if (accessResult.ok) {
+        try {
+            await User.changeNicknameById(accessResult.user_id, nickname);
+            res.status(204).send();
+        } catch (error) {
+            console.error(`Error updating nickname: ${error.message}`);
+            res.status(500).send({ error: 'Internal Server Error' });
+        }
+    } else {
+        res.status(400).send();
+    }
+})
 
 module.exports = router

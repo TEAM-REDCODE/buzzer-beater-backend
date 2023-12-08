@@ -1,6 +1,7 @@
 require('dotenv').config({path: '../.env'})
 const jwt = require('jsonwebtoken')
 const { verify, refreshVerify} = require('./jwt-util')
+const {decode} = require("jsonwebtoken");
 
 const secret = process.env.TOKEN_SECRET
 
@@ -91,8 +92,23 @@ const refresh = async (req, res) => {
     }
 }
 
+const accessVerify = (token) => {
+    try {
+        const decoded = jwt.verify(token, secret)
+        return {
+            ok: true,
+            user_id: decoded.user_id
+        }
+    } catch (error){
+        return {
+            ok: false,
+        }
+    }
+}
+
 module.exports = {
     generateToken,
     generateRefreshToken,
-    refresh
+    refresh,
+    accessVerify
 }
