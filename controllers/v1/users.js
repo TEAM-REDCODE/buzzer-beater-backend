@@ -1,10 +1,11 @@
 const express = require('express');
 const bcrypt = require('bcrypt')
 const { generateToken, generateRefreshToken, refresh, accessVerify } = require('../../middlewares/jwt')
-const Jwt = require('../../models/jwt')
+const cookieParser = require('cookie-parser')
 
 const router = express.Router();
 router.use(express.json())
+router.use(cookieParser())
 
 const { User } = require('../../models')
 
@@ -64,13 +65,11 @@ router.post('/login',  async (req, res) => {
 
         console.log('Login!')
 
-        const refreshToken = generateRefreshToken(user)
+        const refreshToken = await generateRefreshToken(user)
 
         res.cookie('accessToken', generateToken(user),
             { httpOnly: true });
         res.cookie('refreshToken', refreshToken, { httpOnly: true })
-
-        await Jwt.updateRefresh({user_id: user._id, refreshToken: refreshToken})
 
         res.status(200).json({
             message: 'Login successful',
@@ -86,11 +85,12 @@ router.get('/refresh', refresh)
 
 router.get('/logout', async (req, res) => {
     try {
-        const authToken = req.cookies.get('accessToken')
+        const authToken = req.cookies.accessToken
         const accessResult = accessVerify(authToken)
 
         if (accessResult.ok) {
             res.clearCookie('accessToken', { path: '/' })
+            res.clearCookie('refreshToken', { path: '/' })
             res.status(200).json({ message: 'Logout successful' });
         }
         else {
@@ -104,7 +104,7 @@ router.get('/logout', async (req, res) => {
 
 router.put('/nickname', async (req, res) => {
     try {
-        const authToken = req.cookies.get('accessToken')
+        const authToken = req.cookies.accessToken
         const nickname = req.body.nickname
         const accessResult = accessVerify(authToken)
 
@@ -127,7 +127,7 @@ router.put('/nickname', async (req, res) => {
 
 router.put('/height', async (req, res) => {
     try {
-        const authToken = req.cookies.get('accessToken')
+        const authToken = req.cookies.accessToken
         const height = req.body.height
         const accessResult = accessVerify(authToken)
 

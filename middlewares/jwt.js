@@ -2,6 +2,7 @@ require('dotenv').config({path: '../.env'})
 const jwt = require('jsonwebtoken')
 const { Jwt } = require('../models')
 const { verify, refreshVerify} = require('./jwt-util')
+const {compare} = require("bcrypt");
 
 const secret = process.env
 
@@ -21,25 +22,35 @@ const generateToken = (user) => {
 }
 
 const generateRefreshToken = async (user) => {
-    const refreshToken = jwt.sign({}, secret.TOKEN_SECRET, {
+    try {
+        const refreshToken = jwt.sign({}, secret.TOKEN_SECRET, {
             subject: "Buzzer-Beater RefreshToken",
             algorithm: "HS256",
             expiresIn: 14 * 24 * 60 * 60 // 2주
         });
 
-    await Jwt.create({
-        user_id: user._id,
-        refreshToken: refreshToken
-    });
+        const existingToken = await Jwt.findToken(user._id)
 
-    console.log("refreshToken is successfully generated!")
+        if (existingToken){
+            await Jwt.updateRefresh({user_id: user._id, refreshToken: refreshToken})
+        } else {
+            await Jwt.create({
+                user_id: user._id,
+                refreshToken: refreshToken
+            });
+        }
+        console.log("refreshToken is successfully generated!")
 
-    return refreshToken
+        return refreshToken
+    } catch (error) {
+        console.log(error)
+        console.error("Error in generating refreshToken")
+    }
 }
 
 const refresh = async (req, res) => {
-    const authToken = req.cookies.get('accessToken')
-    const refreshToken = req.cookies.get('refreshToken')
+    const authToken = req.cookies.accessToken
+    const refreshToken = req.cookies.refreshToken
 
     if (authToken && refreshToken){
         // access token 검증 - expired여야 함
@@ -49,8 +60,8 @@ const refresh = async (req, res) => {
         const decoded = jwt.decode(authToken);
 
         // 복호화 결과가 없으면 권한 없음 응답
-        if (decoded === null){
-            res.status(401).send({
+        if (!decoded){
+            return res.status(401).send({
                 ok: false,
                 message: "No authorized!"
             })
@@ -58,24 +69,25 @@ const refresh = async (req, res) => {
 
         /* access token의 복호화된 값에서
         *  유저의 id를 가져와서 refresh token을 검증한다. */
-        const refreshResult =  refreshVerify(refreshToken, decoded.user_id)
+        const refreshResult =  await refreshVerify(refreshToken, decoded.user_id)
 
         // 재발급을 위해선 access token이 만료되어 있어야 한다.
         if (!authResult.ok && authResult.message === 'jwt expired'){
             // 1. access token이 만료되고, refresh token도 만료된 경우 -> 새로 로그인을 해야 함.
-            if (!refreshResult.ok){
+            if (!refreshResult){
                 res.status(401).send({
                     ok: false,
                     message: 'No authorized!'
                 })
             } else {
                 // 2. access token이 만료되고 refresh token이 유효한 경우 -> 새로운 access token 발급
-                const newAccessToken = generateRefreshToken({ _id: decoded.user_id, nickname: decoded.nickname })
+                const newAccessToken = await generateToken({ _id: decoded.user_id, nickname: decoded.nickname })
 
                 res.cookie('accessToken', newAccessToken, { httpOnly: true })
                 res.cookie('refreshToken', refreshToken, { httpOnly: true })
 
                 res.status(200).send({
+                    message: 'refresh successful',
                     ok: true,
                 })
             }
