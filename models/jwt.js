@@ -12,6 +12,7 @@ module.exports = class Jwt extends Sequelize.Model{
             user_id: {
                 type: DataTypes.STRING,
                 allowNull: false,
+                unique: true
             },
             refreshToken: {
                 type: DataTypes.STRING,
