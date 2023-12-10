@@ -101,4 +101,25 @@ module.exports = class User extends Sequelize.Model{
             throw error;
         }
     }
+
+    static async convertIdToNickname(_id) {
+        try {
+            const user = await this.findOne({
+                attributes: ['nickname'],
+                where: {
+                    _id: _id
+                }
+            });
+
+            if (user) {
+                return user.nickname;
+            } else {
+                console.log(`User with id ${_id} not found`);
+                return null;
+            }
+        } catch (error) {
+            console.error(`Error converting ID to nickname: ${error.message}`);
+            throw error;
+        }
+    }
 }

@@ -15,6 +15,7 @@ module.exports = class API {
 
     setController(){
         this.app.use('/v1/users', controllers.v1.users)
+        this.app.use('/v1/meets', controllers.v1.meets)
     }
 
     listen() {
