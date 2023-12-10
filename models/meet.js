@@ -4,10 +4,10 @@ module.exports = class Meet extends Sequelize.Model{
     static initialize(sequelize){
         return super.init({
             _id: {
-                type: DataTypes.UUID,
-                defaultValue: DataTypes.UUIDV4,
+                type: DataTypes.INTEGER,
+                autoIncrement: true,
                 primaryKey: true,
-                comment: "고유번호 UUID"
+                comment: "고유번호"
             },
             title: {
                 type: DataTypes.STRING(50),
