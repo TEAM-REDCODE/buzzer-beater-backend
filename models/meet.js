@@ -40,4 +40,15 @@ module.exports = class Meet extends Sequelize.Model{
     static associate(db){
         db.Meet.belongsToMany(db.User, {through: 'UserMeet'})
     }
+
+    static async returnList(page, size){
+        const { count, rows } = await Meet.findAndCountAll({
+            attributes: ['title', 'createdBy', 'maxPerson', 'place', 'time'],
+            order: [['createdAt', 'DESC']],
+            limit: size,
+            offset: (page - 1) * size
+        });
+
+        return { data: rows, total: count }
+    }
 }
