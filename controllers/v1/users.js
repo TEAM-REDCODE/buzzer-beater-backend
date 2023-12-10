@@ -2,12 +2,14 @@ const express = require('express');
 const bcrypt = require('bcrypt')
 const { generateToken, generateRefreshToken, refresh, accessVerify } = require('../../middlewares/jwt')
 const cookieParser = require('cookie-parser')
+const { decode } = require('jsonwebtoken')
 
 const router = express.Router();
 router.use(express.json())
 router.use(cookieParser())
 
 const { User } = require('../../models')
+const {compare} = require("bcrypt");
 
 router.post('/signup', async (req, res)=>{
     try{
@@ -44,6 +46,29 @@ router.post('/signup', async (req, res)=>{
         }
     }
 });
+
+router.get('/', async (req, res) => {
+    try {
+        const authToken = req.cookies.accessToken
+        const accessResult = accessVerify(authToken)
+
+        if (accessResult.ok) {
+            const decoded = decode(authToken)
+            const user = await User.findOne({
+                where: {
+                    _id: decoded.user_id
+                },
+                attributes: ['nickname', 'email', 'height', 'mainPosition', 'isMercenary', 'createdAt', 'updatedAt']
+            })
+            res.status(200).json(user)
+        } else {
+            res.status(401).json({message: 'Invalid access token'})
+        }
+    } catch (error) {
+        console.error(error)
+        res.status(400).send();
+    }
+})
 
 router.post('/login',  async (req, res) => {
     try{
