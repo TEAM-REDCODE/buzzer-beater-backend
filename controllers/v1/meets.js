@@ -88,7 +88,7 @@ router.get('/:id', async (req, res) => {
                 attributes: ['title', 'createdBy', 'maxPerson', 'place', 'time', 'createdAt', 'updatedAt']
             })
 
-            res.status(200).json({meet})
+            res.status(200).json(meet)
         } else {
             res.status(400).send();
         }
@@ -113,11 +113,33 @@ router.put('/:id', async (req, res) => {
                 return res.status(400).json({ error: "허용되지 않은 값이 포함되었습니다." })
             }
             await Meet.updateMeetInfo(reqId, info)
-            res.status(201).json({ message: "update successfully!" })
+            res.status(201).json({ message: "updated successfully!" })
+        } else {
+            res.status(403).json({ error: "Not Allowed to Access" })
+        }
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({error: 'Internal Sever Error'});
+    }
+})
+
+router.delete('/:id', async (req, res) => {
+    try {
+        const authToken = req.cookies.accessToken
+        const accessResult = accessVerify(authToken)
+        const reqId = req.params.id
+
+        if (accessResult.ok) {
+            await Meet.destroy({
+                where: {
+                    _id: reqId
+                }
+            })
+            res.status(200).json({ message: "deleted successfully!" })
         } else {
             res.status(403).json({ error: "Not Allow to Access" })
         }
-    } catch (error) {
+    } catch(error) {
         console.error(error)
         res.status(500).json({error: 'Internal Sever Error'});
     }
