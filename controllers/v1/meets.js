@@ -98,4 +98,29 @@ router.get('/:id', async (req, res) => {
     }
 })
 
+router.put('/:id', async (req, res) => {
+    try {
+        const authToken = req.cookies.accessToken
+        const accessResult = accessVerify(authToken)
+        const reqId = req.params.id
+
+        if (accessResult.ok) {
+            const { ...info } = req.body;
+            if (Object.keys(info).length === 0) return res.status(400).json({error: "값이 없습니다."})
+            const allowedProperties = ['title', 'maxPerson', 'place', 'time'];
+            const invalidProps = Object.keys(info).filter(prop => !allowedProperties.includes(prop));
+            if (invalidProps.length > 0) {
+                return res.status(400).json({ error: "허용되지 않은 값이 포함되었습니다." })
+            }
+            await Meet.updateMeetInfo(reqId, info)
+            res.status(201).json({ message: "update successfully!" })
+        } else {
+            res.status(403).json({ error: "Not Allow to Access" })
+        }
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({error: 'Internal Sever Error'});
+    }
+})
+
 module.exports = router
