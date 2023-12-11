@@ -51,4 +51,15 @@ module.exports = class Meet extends Sequelize.Model{
 
         return { data: rows, total: count }
     }
+
+    static async updateMeetInfo(filter, update) {
+        await Meet.update(
+            update,
+            {
+                where: {
+                    _id: filter
+                }
+            }
+        )
+    }
 }
