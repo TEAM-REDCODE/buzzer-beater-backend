@@ -2,7 +2,6 @@ require('dotenv').config({path: '../.env'})
 const jwt = require('jsonwebtoken')
 const { Jwt } = require('../models')
 const { verify, refreshVerify} = require('./jwt-util')
-const {compare} = require("bcrypt");
 
 const secret = process.env
 

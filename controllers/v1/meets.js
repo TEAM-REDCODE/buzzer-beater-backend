@@ -15,7 +15,8 @@ router.post('/', async (req, res) => {
 
         if (accessResult.ok) {
             const { title, maxPerson, place, time } = req.body
-            const userId = await jwt.decode(authToken).user_id
+            const decoded = await jwt.decode(authToken)
+            const userId = decoded.user_id
 
             // 1. Meet 인스턴스 생성 및 id 가져오기
             const meet = await Meet.create({
@@ -23,7 +24,8 @@ router.post('/', async (req, res) => {
                 maxPerson: maxPerson,
                 place: place,
                 time: time,
-                createdBy: await User.convertIdToNickname(userId)
+                createdById: userId,
+                createdByNick: decoded.nickname
             })
 
             // 2. UserMeet 모델에 인스턴스 생성
@@ -41,32 +43,24 @@ router.post('/', async (req, res) => {
 
 router.get('/', async (req, res) => {
     try {
-        const authToken = req.cookies.accessToken
-        const accessResult = accessVerify(authToken)
+        const page = parseInt(req.query.page || 1)
+        const size = Number(req.query.size || 15)
 
-        if (accessResult.ok) {
-            const page = parseInt(req.query.page || 1)
-            const size = Number(req.query.size || 15)
+        const result = await Meet.returnList(page, size)
+        console.log(result)
+        const totalPages = Math.ceil(result.total/size)
 
-            const result = await Meet.returnList(page, size)
-            console.log(result)
-            const totalPages = Math.ceil(result.total/size)
-
-            res.status(200).json({
-                meets: result.data,
-                page: {
-                    totalDataCnt: result.total,
-                    totalPages: totalPages,
-                    isLastPage: page >= totalPages,
-                    isFirstPage: page === 1,
-                    requestPage: page,
-                    requestSize: size
-                }
-            })
-        }
-        else {
-            res.status(400).send();
-        }
+        res.status(200).json({
+            meets: result.data,
+            page: {
+                totalDataCnt: result.total,
+                totalPages: totalPages,
+                isLastPage: page >= totalPages,
+                isFirstPage: page === 1,
+                requestPage: page,
+                requestSize: size
+            }
+        })
     } catch (error) {
         console.error(error)
         res.status(500).json({error: 'Internal Sever Error'});
@@ -122,7 +116,7 @@ router.get('/:id', async (req, res) => {
                 where: {
                     _id: reqId
                 },
-                attributes: ['_id', 'title', 'createdBy', 'maxPerson', 'place', 'time', 'createdAt', 'updatedAt']
+                attributes: ['_id', 'title', 'createdByNick', 'maxPerson', 'place', 'time', 'createdAt', 'updatedAt']
             })
 
             res.status(200).json(meet)
@@ -141,16 +135,18 @@ router.put('/:id', async (req, res) => {
         const accessResult = accessVerify(authToken)
         const reqId = req.params.id
 
-        if (accessResult.ok) {
+        const meet = await Meet.findByPk(reqId)
+
+        if (accessResult.ok && accessResult.user_id === meet.createdById) {
             const { ...info } = req.body;
-            if (Object.keys(info).length === 0) return res.status(400).json({error: "값이 없습니다."})
+            if (!Object.keys(info).length) return res.status(400).json({error: "값이 없습니다."})
             const allowedProperties = ['title', 'maxPerson', 'place', 'time'];
             const invalidProps = Object.keys(info).filter(prop => !allowedProperties.includes(prop));
             if (invalidProps.length > 0) {
                 return res.status(400).json({ error: "허용되지 않은 값이 포함되었습니다." })
             }
             await Meet.updateMeetInfo(reqId, info)
-            res.status(201).json({ message: "updated successfully!" })
+            res.status(200).json({ message: "updated successfully!" })
         } else {
             res.status(403).json({ error: "Not Allowed to Access" })
         }
@@ -166,12 +162,10 @@ router.delete('/:id', async (req, res) => {
         const accessResult = accessVerify(authToken)
         const reqId = req.params.id
 
-        if (accessResult.ok) {
-            await Meet.destroy({
-                where: {
-                    _id: reqId
-                }
-            })
+        const meet = await Meet.findByPk(reqId)
+
+        if (accessResult.ok && accessResult.user_id === meet.createdById) {
+            await meet.destroy()
             res.status(200).json({ message: "deleted successfully!" })
         } else {
             res.status(403).json({ error: "Not Allow to Access" })

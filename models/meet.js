@@ -13,7 +13,11 @@ module.exports = class Meet extends Sequelize.Model{
                 type: DataTypes.STRING(50),
                 allowNull: false,
             },
-            createdBy: {
+            createdById: {
+                type: DataTypes.STRING(50),
+                allowNull: false,
+            },
+            createdByNick: {
                 type: DataTypes.STRING(50),
                 allowNull: false,
             },
@@ -48,7 +52,7 @@ module.exports = class Meet extends Sequelize.Model{
 
     static async returnList(page, size){
         const { count, rows } = await Meet.findAndCountAll({
-            attributes: ['_id', 'title', 'createdBy', 'maxPerson', 'place', 'time'],
+            attributes: ['_id', 'title', 'createdByNick', 'maxPerson', 'place', 'time'],
             order: [['createdAt', 'DESC']],
             limit: size,
             offset: (page - 1) * size

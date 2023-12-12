@@ -182,7 +182,7 @@ router.get('/belong', async (req, res) => {
             // 2. 자신이 속한 meet 리스트 가져오기
             if (user) {
                 const meets = await user.getMeets({
-                    attributes: { exclude: [] },
+                    attributes: { exclude: ['createdById'] },
                     through: { attributes: [] }
                 })
 
