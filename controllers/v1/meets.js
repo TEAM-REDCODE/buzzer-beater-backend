@@ -3,7 +3,6 @@ const cookieParser = require('cookie-parser')
 const jwt = require('jsonwebtoken')
 const {accessVerify} = require("../../middlewares/jwt");
 const { User, Meet } = require('../../models')
-const {INTEGER, NUMBER} = require("sequelize");
 
 const router = express.Router();
 router.use(express.json())
@@ -74,6 +73,44 @@ router.get('/', async (req, res) => {
     }
 })
 
+router.get('/:id/reg', async (req, res) => {
+    try {
+        const authToken = req.cookies.accessToken
+        const accessResult = accessVerify(authToken)
+        const meetId = req.params.id
+
+        if(accessResult.ok) {
+            const user = await User.findByPk(accessResult.user_id)
+            try {
+                await user.addMeets(meetId)
+                res.status(200).json({
+                    ok: true,
+                    message: '등록 완료'
+                })
+            } catch (err) {
+                if (err.name === 'SequelizeUniqueConstraintError') {
+                    res.status(400).json({
+                        ok: false,
+                        message: '이미 등록된 회원',
+                        dup: true
+                    })
+                } else {
+                    res.status(500).json({
+                        ok: false,
+                        message: '등록 중 오류 발생',
+                        dup: false
+                    })
+                }
+            }
+        } else {
+            res.status(400).send();
+        }
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({error: 'Internal Sever Error'});
+    }
+})
+
 router.get('/:id', async (req, res) => {
     try {
         const authToken = req.cookies.accessToken
@@ -85,7 +122,7 @@ router.get('/:id', async (req, res) => {
                 where: {
                     _id: reqId
                 },
-                attributes: ['title', 'createdBy', 'maxPerson', 'place', 'time', 'createdAt', 'updatedAt']
+                attributes: ['_id', 'title', 'createdBy', 'maxPerson', 'place', 'time', 'createdAt', 'updatedAt']
             })
 
             res.status(200).json(meet)
