@@ -56,7 +56,12 @@ module.exports = class User extends Sequelize.Model{
     }
 
     static associate(db){
-        db.User.belongsToMany(db.Meet, {through: 'UserMeet'})
+        db.User.belongsToMany(db.Meet, {
+            through: {
+                model: db.UserMeet,
+                uniqueKey: '_id'
+            }
+        })
         db.User.hasOne(db.Merc, {foreignKey: 'UserId',sourceKey:'_id'});
     }
 

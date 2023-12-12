@@ -9,7 +9,6 @@ router.use(express.json())
 router.use(cookieParser())
 
 const { User } = require('../../models')
-const {compare} = require("bcrypt");
 
 router.post('/signup', async (req, res)=>{
     try{
@@ -168,6 +167,40 @@ router.put('/height', async (req, res) => {
             res.status(400).send();
         }
     } catch (error){
+        console.error(error)
+        res.status(500).json({error: 'Internal Sever Error'});
+    }
+})
+
+router.get('/belong', async (req, res) => {
+    try{
+        const authToken = req.cookies.accessToken
+        const accessResult = accessVerify(authToken)
+        if (accessResult.ok) {
+            // 1. pk를 통해 유저 불러오기
+            const user = await User.findByPk(accessResult.user_id)
+            // 2. 자신이 속한 meet 리스트 가져오기
+            if (user) {
+                const meets = await user.getMeets({
+                    attributes: { exclude: [] },
+                    through: { attributes: [] }
+                })
+
+                const sanitizedMeets = meets.map(meet => {
+                    const sanitizedMeet = meet.toJSON();
+                    delete sanitizedMeet.UserMeet;
+                    return sanitizedMeet;
+                });
+
+                res.status(200).json(sanitizedMeets)
+            }
+            else {
+                res.status(404).json({ error: 'User not found' });
+            }
+        } else {
+            res.status(400).send();
+        }
+    } catch (error) {
         console.error(error)
         res.status(500).json({error: 'Internal Sever Error'});
     }
