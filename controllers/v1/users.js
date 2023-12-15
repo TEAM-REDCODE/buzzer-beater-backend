@@ -2,7 +2,8 @@ const express = require('express');
 const bcrypt = require('bcrypt')
 const { generateToken, generateRefreshToken, refresh, accessVerify } = require('../../middlewares/jwt')
 const cookieParser = require('cookie-parser')
-const { decode } = require('jsonwebtoken')
+const { authenticateUser } = require('../../middlewares/authUser')
+const errorMiddleware = require('../../middlewares/error')
 
 const router = express.Router();
 router.use(express.json())
@@ -10,7 +11,7 @@ router.use(cookieParser())
 
 const { User } = require('../../models')
 
-router.post('/signup', async (req, res)=>{
+router.post('/signup', async (req, res, next)=>{
     try{
         const {nickname, password, email, height, mainPosition} = req.body
         const existingUser = await User.findOne({
@@ -38,38 +39,23 @@ router.post('/signup', async (req, res)=>{
         });
     } catch (error){
         console.error(error)
-        if (error.name === 'SequelizeValidationError') {
-            res.status(400).json({ error: error.errors });
-        } else {
-            res.status(500).json({ error: 'Internal Sever Error' });
-        }
+        next(error)
     }
 });
 
-router.get('/', async (req, res) => {
+router.get('/', authenticateUser, async (req, res, next) => {
     try {
-        const authToken = req.cookies.accessToken
-        const accessResult = accessVerify(authToken)
-
-        if (accessResult.ok) {
-            const decoded = decode(authToken)
-            const user = await User.findOne({
-                where: {
-                    _id: decoded.user_id
-                },
-                attributes: ['nickname', 'email', 'height', 'mainPosition', 'isMercenary', 'createdAt', 'updatedAt']
-            })
-            res.status(200).json(user)
-        } else {
-            res.status(401).json({message: 'Invalid access token'})
-        }
+        const user = await User.findByPk(req.user.id, {
+            attributes: ['nickname', 'email', 'height', 'mainPosition', 'isMercenary', 'createdAt', 'updatedAt']
+        })
+        res.status(200).json(user)
     } catch (error) {
         console.error(error)
-        res.status(400).send();
+        next(error)
     }
 })
 
-router.post('/login',  async (req, res) => {
+router.post('/login',  async (req, res, next) => {
     try{
         const { email, password } = req.body
         const user = await User.findOne({
@@ -91,6 +77,10 @@ router.post('/login',  async (req, res) => {
 
         const refreshToken = await generateRefreshToken(user)
 
+        if (!refreshToken) {
+            return res.status(500).json({ error: 'Failed to generate refresh token' });
+        }
+
         res.cookie('accessToken', generateToken(user),
             { httpOnly: true });
         res.cookie('refreshToken', refreshToken, { httpOnly: true })
@@ -101,109 +91,81 @@ router.post('/login',  async (req, res) => {
         });
     } catch (error){
         console.error(error)
-        res.status(500).json({error: 'Internal Sever Error'});
+        next(error)
     }
 })
 
 router.get('/refresh', refresh)
 
-router.get('/logout', async (req, res) => {
+router.get('/logout', authenticateUser, async (req, res, next) => {
     try {
-        const authToken = req.cookies.accessToken
-        const accessResult = accessVerify(authToken)
+        res.clearCookie('accessToken', { path: '/' })
+        res.clearCookie('refreshToken', { path: '/' })
+        res.status(200).json({ message: 'Logout successful' });
+    } catch (error) {
+        console.error(error)
+        next(error)
+    }
+})
 
-        if (accessResult.ok) {
-            res.clearCookie('accessToken', { path: '/' })
-            res.clearCookie('refreshToken', { path: '/' })
-            res.status(200).json({ message: 'Logout successful' });
+router.put('/nickname', authenticateUser, async (req, res, next) => {
+    try {
+        const nickname = req.body.nickname
+        if (!nickname) {
+            return res.status(400).json({error: 'Bad request', message: 'Nickname is required.'})
+        }
+        await User.changeNicknameById(req.user.id, nickname);
+        res.status(204).send();
+    }
+    catch (error) {
+        console.error(error)
+        next(error)
+    }
+})
+
+router.put('/height', authenticateUser, async (req, res, next) => {
+    try {
+        const height = req.body.height
+        if (!height) {
+            return res.status(400).json({error: 'Bad request', message: 'Height is required.'})
+        }
+        await User.changeHeightById(req.user.id, height);
+        res.status(204).send();
+    }
+    catch (error) {
+        console.error(error)
+        next(error)
+    }
+})
+
+router.get('/belong', authenticateUser, async (req, res, next) => {
+    try{
+        // 1. pk를 통해 유저 불러오기
+        const user = await User.findByPk(req.user.id)
+        // 2. 자신이 속한 meet 리스트 가져오기
+        if (user) {
+            const meets = await user.getMeets({
+                attributes: { exclude: ['createdById'] },
+                through: { attributes: [] }
+            })
+
+            const sanitizedMeets = meets.map(meet => {
+                const sanitizedMeet = meet.toJSON();
+                delete sanitizedMeet.UserMeet;
+                return sanitizedMeet;
+            });
+
+            res.status(200).json(sanitizedMeets)
         }
         else {
-            res.status(401).json({ message: 'Invalid access token' })
+            res.status(404).json({ error: 'User not found' });
         }
     } catch (error) {
         console.error(error)
-        res.status(500).json({error: 'Internal Sever Error'});
+        next(error)
     }
 })
 
-router.put('/nickname', async (req, res) => {
-    try {
-        const authToken = req.cookies.accessToken
-        const nickname = req.body.nickname
-        const accessResult = accessVerify(authToken)
-
-        if (accessResult.ok) {
-            try {
-                await User.changeNicknameById(accessResult.user_id, nickname);
-                res.status(204).send();
-            } catch (error) {
-                console.error(`Error updating nickname: ${error.message}`);
-                res.status(500).send({ error: 'Internal Server Error' });
-            }
-        } else {
-            res.status(400).send();
-        }
-    } catch (error) {
-        console.error(error)
-        res.status(500).json({error: 'Internal Sever Error'});
-    }
-})
-
-router.put('/height', async (req, res) => {
-    try {
-        const authToken = req.cookies.accessToken
-        const height = req.body.height
-        const accessResult = accessVerify(authToken)
-
-        if (accessResult.ok) {
-            try {
-                await User.changeHeightById(accessResult.user_id, height);
-                res.status(204).send();
-            } catch (error) {
-                console.error(`Error updating height: ${error.message}`);
-                res.status(500).send({ error: 'Internal Server Error' });
-            }
-        } else {
-            res.status(400).send();
-        }
-    } catch (error){
-        console.error(error)
-        res.status(500).json({error: 'Internal Sever Error'});
-    }
-})
-
-router.get('/belong', async (req, res) => {
-    try{
-        const authToken = req.cookies.accessToken
-        const accessResult = accessVerify(authToken)
-        if (accessResult.ok) {
-            // 1. pk를 통해 유저 불러오기
-            const user = await User.findByPk(accessResult.user_id)
-            // 2. 자신이 속한 meet 리스트 가져오기
-            if (user) {
-                const meets = await user.getMeets({
-                    attributes: { exclude: ['createdById'] },
-                    through: { attributes: [] }
-                })
-
-                const sanitizedMeets = meets.map(meet => {
-                    const sanitizedMeet = meet.toJSON();
-                    delete sanitizedMeet.UserMeet;
-                    return sanitizedMeet;
-                });
-
-                res.status(200).json(sanitizedMeets)
-            }
-            else {
-                res.status(404).json({ error: 'User not found' });
-            }
-        } else {
-            res.status(400).send();
-        }
-    } catch (error) {
-        console.error(error)
-        res.status(500).json({error: 'Internal Sever Error'});
-    }
-})
+router.use(errorMiddleware)
 
 module.exports = router

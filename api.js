@@ -12,10 +12,10 @@ module.exports = class API {
 
         this.setController()
     }
-
     setController(){
         this.app.use('/v1/users', controllers.v1.users)
         this.app.use('/v1/meets', controllers.v1.meets)
+        this.app.use('/v1/mercs', controllers.v1.mercs)
     }
 
     listen() {

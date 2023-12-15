@@ -1,53 +1,48 @@
 const express = require('express')
 const cookieParser = require('cookie-parser')
-const jwt = require('jsonwebtoken')
-const {accessVerify} = require("../../middlewares/jwt");
 const { Meet } = require('../../models')
+const { authenticateUser } = require('../../middlewares/authUser')
+const errorMiddleware = require('../../middlewares/error')
 
 const router = express.Router();
 router.use(express.json())
 router.use(cookieParser())
 
-router.post('/', async (req, res) => {
+router.post('/', authenticateUser, async (req, res, next) => {
     try {
-        const authToken = req.cookies.accessToken
-        const accessResult = accessVerify(authToken)
+        const { title, maxPerson, place, time } = req.body
 
-        if (accessResult.ok) {
-            const { title, maxPerson, place, time } = req.body
-            const decoded = await jwt.decode(authToken)
-            const userId = decoded.user_id
-
-            // 1. Meet 인스턴스 생성 및 id 가져오기
-            const meet = await Meet.create({
-                title: title,
-                maxPerson: maxPerson,
-                place: place,
-                time: time,
-                createdById: userId,
-                createdByNick: decoded.nickname
-            })
-
-            // 2. UserMeet 모델에 인스턴스 생성
-            await meet.addUsers(userId);
-
-            res.status(201).json({message: 'create meet successfully!'});
-        } else {
-            res.status(400).send();
+        if (!title || !maxPerson || !place || !time) {
+            return res.status(400).json({ error: 'Invalid input data' });
         }
+
+        // 1. Meet 인스턴스 생성 및 id 가져오기
+        const meet = await Meet.create({
+            title: title,
+            maxPerson: maxPerson,
+            place: place,
+            time: time,
+            createdById: req.user.id,
+            createdByNick: req.user.nickname
+        })
+
+        // 2. UserMeet 모델에 인스턴스 생성
+        await meet.addUser(req.user.id);
+        await meet.increment()
+
+        res.status(201).json({message: 'create meet successfully!'});
     } catch (error) {
         console.error(error)
-        res.status(500).json({error: 'Internal Sever Error'});
+        next(error)
     }
 })
 
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
     try {
         const page = parseInt(req.query.page || 1)
         const size = Number(req.query.size || 15)
 
         const result = await Meet.returnList(page, size)
-        console.log(result)
         const totalPages = Math.ceil(result.total/size)
 
         res.status(200).json({
@@ -63,86 +58,64 @@ router.get('/', async (req, res) => {
         })
     } catch (error) {
         console.error(error)
-        res.status(500).json({error: 'Internal Sever Error'});
+        next(error)
     }
 })
 
-router.get('/:id/reg', async (req, res) => {
+router.get('/:id/reg', authenticateUser, async (req, res) => {
     try {
-        const authToken = req.cookies.accessToken
-        const accessResult = accessVerify(authToken)
         const meetId = req.params.id
 
-        if(accessResult.ok) {
-            const meet = await Meet.findByPk(meetId)
-            try {
-                const partedIn = await meet.getUsers()
-                const userIds = partedIn.map(user => user._id);
-                if (userIds.includes(accessResult.user_id)){
-                    return res.status(400).json({
-                        ok: false,
-                        message: '이미 등록된 회원',
-                        dup: true
-                    })
-                }
-                await meet.addUser(accessResult.user_id)
-                meet.count = meet.count + 1
-                await meet.save()
-                res.status(200).json({
-                    ok: true,
-                    message: '등록 완료',
-                    dup: false
-                })
-            } catch (err) {
-                console.log(err)
-                res.status(500).json({
-                    ok: false,
-                    message: '등록 중 오류 발생',
-                    dup: false
-                })
-            }
-        } else {
-            res.status(400).send();
-        }
-    } catch (error) {
-        console.error(error)
-        res.status(500).json({error: 'Internal Sever Error'});
-    }
-})
+        const meet = await Meet.findByPk(meetId)
+        const hasUser = await meet.hasUser(req.user.id)
 
-router.get('/:id', async (req, res) => {
-    try {
-        const authToken = req.cookies.accessToken
-        const accessResult = accessVerify(authToken)
-        const reqId = req.params.id
-
-        if (accessResult.ok) {
-            const meet = await Meet.findOne({
-                where: {
-                    _id: reqId
-                },
-                attributes: ['_id', 'title', 'createdByNick', 'maxPerson', 'place', 'time', 'createdAt', 'updatedAt']
+        if (hasUser){
+            return res.status(400).json({
+                ok: false,
+                message: '이미 등록된 회원',
+                dup: true
             })
-
-            res.status(200).json(meet)
-        } else {
-            res.status(400).send();
         }
+
+        await meet.addUser(req.user.id)
+        await meet.increment('count')
+
+        res.status(200).json({
+            ok: true,
+            message: '등록 완료',
+            dup: false
+        })
     } catch (error) {
-        console.error(error)
-        res.status(500).json({error: 'Internal Sever Error'});
+        console.error(error);
+        res.status(500).json({
+            ok: false,
+            message: '등록 중 오류 발생',
+            dup: false
+        });
     }
 })
 
-router.put('/:id', async (req, res) => {
+router.get('/:id', authenticateUser, async (req, res, next) => {
     try {
-        const authToken = req.cookies.accessToken
-        const accessResult = accessVerify(authToken)
         const reqId = req.params.id
 
+        const meet = await Meet.findByPk(reqId, {
+            attributes: ['_id', 'title', 'createdByNick', 'maxPerson', 'count', 'place', 'time', 'createdAt', 'updatedAt']
+        })
+
+        res.status(200).json(meet)
+    } catch (error) {
+        console.error(error)
+        next(error)
+    }
+})
+
+router.put('/:id', authenticateUser, async (req, res, next) => {
+    try {
+        const reqId = req.params.id
         const meet = await Meet.findByPk(reqId)
 
-        if (accessResult.ok && accessResult.user_id === meet.createdById) {
+        if (req.user.id === meet.createdById) {
             const { ...info } = req.body;
             if (!Object.keys(info).length) return res.status(400).json({error: "값이 없습니다."})
             const allowedProperties = ['title', 'maxPerson', 'place', 'time'];
@@ -157,19 +130,16 @@ router.put('/:id', async (req, res) => {
         }
     } catch (error) {
         console.error(error)
-        res.status(500).json({error: 'Internal Sever Error'});
+        next(error)
     }
 })
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticateUser, async (req, res, next) => {
     try {
-        const authToken = req.cookies.accessToken
-        const accessResult = accessVerify(authToken)
         const reqId = req.params.id
-
         const meet = await Meet.findByPk(reqId)
 
-        if (accessResult.ok && accessResult.user_id === meet.createdById) {
+        if (req.user.id === meet.createdById) {
             await meet.destroy()
             res.status(200).json({ message: "deleted successfully!" })
         } else {
@@ -177,8 +147,10 @@ router.delete('/:id', async (req, res) => {
         }
     } catch(error) {
         console.error(error)
-        res.status(500).json({error: 'Internal Sever Error'});
+        next(error)
     }
 })
+
+router.use(errorMiddleware)
 
 module.exports = router
