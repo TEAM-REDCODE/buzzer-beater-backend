@@ -2,7 +2,7 @@ const express = require('express')
 const cookieParser = require('cookie-parser')
 const jwt = require('jsonwebtoken')
 const {accessVerify} = require("../../middlewares/jwt");
-const { User, Meet } = require('../../models')
+const { Meet } = require('../../models')
 
 const router = express.Router();
 router.use(express.json())
@@ -74,27 +74,32 @@ router.get('/:id/reg', async (req, res) => {
         const meetId = req.params.id
 
         if(accessResult.ok) {
-            const user = await User.findByPk(accessResult.user_id)
+            const meet = await Meet.findByPk(meetId)
             try {
-                await user.addMeets(meetId)
-                res.status(200).json({
-                    ok: true,
-                    message: '등록 완료'
-                })
-            } catch (err) {
-                if (err.name === 'SequelizeUniqueConstraintError') {
-                    res.status(400).json({
+                const partedIn = await meet.getUsers()
+                const userIds = partedIn.map(user => user._id);
+                if (userIds.includes(accessResult.user_id)){
+                    return res.status(400).json({
                         ok: false,
                         message: '이미 등록된 회원',
                         dup: true
                     })
-                } else {
-                    res.status(500).json({
-                        ok: false,
-                        message: '등록 중 오류 발생',
-                        dup: false
-                    })
                 }
+                await meet.addUser(accessResult.user_id)
+                meet.count = meet.count + 1
+                await meet.save()
+                res.status(200).json({
+                    ok: true,
+                    message: '등록 완료',
+                    dup: false
+                })
+            } catch (err) {
+                console.log(err)
+                res.status(500).json({
+                    ok: false,
+                    message: '등록 중 오류 발생',
+                    dup: false
+                })
             }
         } else {
             res.status(400).send();
