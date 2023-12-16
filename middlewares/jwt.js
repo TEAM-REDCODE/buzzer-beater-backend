@@ -111,7 +111,8 @@ const accessVerify = (token) => {
         const decoded = jwt.verify(token, secret.TOKEN_SECRET)
         return {
             ok: true,
-            user_id: decoded.user_id
+            user_id: decoded.user_id,
+            nickname: decoded.nickname
         }
     } catch (error){
         return {
