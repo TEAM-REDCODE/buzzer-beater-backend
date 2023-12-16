@@ -145,17 +145,12 @@ router.get('/belong', authenticateUser, async (req, res, next) => {
         // 2. 자신이 속한 meet 리스트 가져오기
         if (user) {
             const meets = await user.getMeets({
-                attributes: { exclude: ['createdById'] },
-                through: { attributes: [] }
+                attributes: { exclude: ['createdById'] }
             })
-
-            const sanitizedMeets = meets.map(meet => {
-                const sanitizedMeet = meet.toJSON();
-                delete sanitizedMeet.UserMeet;
-                return sanitizedMeet;
-            });
-
-            res.status(200).json(sanitizedMeets)
+            const jsonMeets = meets.map(meet => {
+                return { ...meet.toJSON(), UserMeet: undefined }
+            })
+            res.status(200).json(jsonMeets)
         }
         else {
             res.status(404).json({ error: 'User not found' });

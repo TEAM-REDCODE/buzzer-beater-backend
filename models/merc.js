@@ -1,4 +1,5 @@
 const { Sequelize, DataTypes } = require("sequelize")
+const User = require('./user')
 
 module.exports = class Merc extends Sequelize.Model{
     static initialize(sequelize){
@@ -37,7 +38,14 @@ module.exports = class Merc extends Sequelize.Model{
             attributes: ['_id', 'position', 'avTime', 'createdAt'],
             order: [['createdAt', 'DESC']],
             limit: size,
-            offset: (page - 1) * size
+            offset: (page - 1) * size,
+            include: [
+                {
+                    model: User,
+                    attributes: ['nickname', 'height']
+                }
+            ],
+            raw: true
         });
 
         return { data: rows, total: count }

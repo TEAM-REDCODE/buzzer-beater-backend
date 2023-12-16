@@ -28,7 +28,6 @@ router.post('/', authenticateUser, async (req, res, next) => {
 
         // 2. UserMeet 모델에 인스턴스 생성
         await meet.addUser(req.user.id);
-        await meet.increment()
 
         res.status(201).json({message: 'create meet successfully!'});
     } catch (error) {
@@ -78,7 +77,10 @@ router.get('/:id/reg', authenticateUser, async (req, res) => {
         }
 
         await meet.addUser(req.user.id)
-        await meet.increment('count')
+
+        const users = await meet.getUsers()
+        meet.count = users.length
+        await meet.save()
 
         res.status(200).json({
             ok: true,
