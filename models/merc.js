@@ -29,8 +29,11 @@ module.exports = class Merc extends Sequelize.Model{
         db.Merc.belongsTo(db.User, {foreignKey: 'UserId', targetKey:'_id'});
     }
 
-    static async returnList(page, size){
+    static async returnList(page, size, position){
         const { count, rows } = await Merc.findAndCountAll({
+            where: {
+                position: position
+            },
             attributes: ['_id', 'position', 'avTime', 'createdAt'],
             order: [['createdAt', 'DESC']],
             limit: size,

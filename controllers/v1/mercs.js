@@ -30,12 +30,17 @@ router.post('/', authenticateUser, async (req, res, next) => {
     }
 })
 
-router.get('/', authenticateUser, async (req, res, next) => {
+router.get('/:position', authenticateUser, async (req, res, next) => {
     try {
         const page = parseInt(req.query.page || 1)
         const size = Number(req.query.size || 15)
+        const position = req.params.position
+        const posList = ['c', 'pf', 'sf', 'sg', 'pg']
+        if (!posList.includes(position)){
+            return res.status(400).json({ error: 'Invalid position data' });
+        }
 
-        const result = await Merc.returnList(page, size)
+        const result = await Merc.returnList(page, size, position)
         const totalPages = Math.ceil(result.total/size)
 
         res.status(200).json({
