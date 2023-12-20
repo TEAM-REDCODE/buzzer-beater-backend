@@ -4,6 +4,7 @@ const { generateToken, generateRefreshToken, refresh, accessVerify } = require('
 const cookieParser = require('cookie-parser')
 const { authenticateUser } = require('../../middlewares/authUser')
 const errorMiddleware = require('../../middlewares/error')
+const { signUp, getUserInfo, login} = require('../../services')
 
 const router = express.Router();
 router.use(express.json())
@@ -13,27 +14,8 @@ const { User } = require('../../models')
 
 router.post('/signup', async (req, res, next)=>{
     try{
-        const {nickname, password, email, height, mainPosition} = req.body
-        const existingUser = await User.findOne({
-            where: {
-                email: email
-            }
-        })
-        if (existingUser){
-            return res.status(400).json({error: 'Email is already existing'})
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        const newUser = await User.create({
-            nickname: nickname,
-            password: hashedPassword,
-            email: email,
-            height: height,
-            mainPosition: mainPosition
-        });
-
-        console.log("Data is created!")
+        const {...userData} = req.body
+        await signUp(userData)
         res.status(201).json({
             message: 'User registration successful',
         });
@@ -45,9 +27,8 @@ router.post('/signup', async (req, res, next)=>{
 
 router.get('/', authenticateUser, async (req, res, next) => {
     try {
-        const user = await User.findByPk(req.user.id, {
-            attributes: ['nickname', 'email', 'height', 'mainPosition', 'isMercenary', 'createdAt', 'updatedAt']
-        })
+        const selfId = req.user.id
+        const user = await getUserInfo(selfId)
         res.status(200).json(user)
     } catch (error) {
         console.error(error)
@@ -58,36 +39,11 @@ router.get('/', authenticateUser, async (req, res, next) => {
 router.post('/login',  async (req, res, next) => {
     try{
         const { email, password } = req.body
-        const user = await User.findOne({
-            where: {
-                email: email
-            }
-        })
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        const passwordMatch = await bcrypt.compare(password, user.password)
-
-        if (!passwordMatch){
-            return res.status(401).json({ error: 'Invalid password' });
-        }
-
-        console.log('Login!')
-
-        const refreshToken = await generateRefreshToken(user)
-
-        if (!refreshToken) {
-            return res.status(500).json({ error: 'Failed to generate refresh token' });
-        }
-
-        res.cookie('accessToken', generateToken(user),
-            { httpOnly: true });
-        res.cookie('refreshToken', refreshToken, { httpOnly: true })
+        await login(req, res, email, password)
 
         res.status(200).json({
             message: 'Login successful',
-            nickname: user.nickname
+            nickname: req.nickname
         });
     } catch (error){
         console.error(error)

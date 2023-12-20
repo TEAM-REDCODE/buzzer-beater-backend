@@ -1,12 +1,17 @@
-const errorMiddleware = (err, req, res) => {
-    console.error(err.stack);
+const { APIError, InternalServerError } = require('../type/errors')
 
-    if (err.name === 'SequelizeValidationError') {
-        // Sequelize Validation Error 처리
-        res.status(400).json({ error: err.errors });
-    } else {
-        // 일반적인 에러 처리
-        res.status(500).json({ error: 'Internal Server Error'});
+const errorMiddleware = (err, req, res) => {
+    try {
+        if (!(err instanceof APIError)) {
+            err = new InternalServerError(err)
+        }
+        res.meta.error = err
+        res.status(err.statusCode).json({
+            message: err.message,
+            code: err.errorCode,
+        })
+    } catch (err) {
+        res.status(500).json({ message: 'Internal server error', code: 5004 })
     }
 }
 
