@@ -1,7 +1,7 @@
 const express = require('express')
 const cookieParser = require('cookie-parser')
 const { Meet } = require('../../models')
-const { authenticateUser } = require('../../middlewares/authUser')
+const authenticateUser = require('../../middlewares/authUser')
 const errorMiddleware = require('../../middlewares/error')
 
 const router = express.Router();

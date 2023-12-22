@@ -1,7 +1,11 @@
 const { APIError, InternalServerError } = require('../type/errors')
 
-const errorMiddleware = (err, req, res) => {
+const errorMiddleware = (err, req, res, next) => {
     try {
+        console.log(err instanceof APIError)
+
+        //todo: fix error type
+
         if (!(err instanceof APIError)) {
             err = new InternalServerError(err)
         }

@@ -1,8 +1,8 @@
 const { APIError } = require('./error')
 
 class ExistingUser extends APIError {
-    constructor() {
-        super('Email already exists', 400, 1001)
+    constructor(message) {
+        super(`${message} already exists`, 400, 1001)
         Object.setPrototypeOf(this, ExistingUser.prototype)
     }
 }

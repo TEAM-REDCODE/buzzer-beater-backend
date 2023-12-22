@@ -1,9 +1,8 @@
 const express = require('express')
 const cookieParser = require('cookie-parser')
-const {authenticateUser} = require("../../middlewares/authUser");
+const authenticateUser = require("../../middlewares/authUser");
 const errorMiddleware = require('../../middlewares/error')
 const { Merc, User} = require('../../models')
-const {compare} = require("bcrypt");
 
 const router = express.Router();
 router.use(express.json())
