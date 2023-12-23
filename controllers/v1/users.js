@@ -3,7 +3,7 @@ const { refresh } = require('../../middlewares/jwt')
 const cookieParser = require('cookie-parser')
 const authenticateUser = require('../../middlewares/authUser')
 const errorMiddleware = require('../../middlewares/error')
-const { UserService , } = require('../../services')
+const { UserService} = require('../../services')
 
 const router = express.Router();
 router.use(express.json())

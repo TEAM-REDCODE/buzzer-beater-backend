@@ -3,24 +3,26 @@ const bcrypt = require("bcrypt");
 const errors = require('../type/errors')
 const {generateRefreshToken, generateToken} = require("../middlewares/jwt");
 
+const { pTypeList, avUpdateList } = require('../constants')
+
+async function checkUserExistence(field, value, errorMessage) {
+    const existingUser = await User.findOne({ where: { [field]: value } });
+    if (existingUser) throw new errors.ExistingUser(`${errorMessage} already exists`);
+}
+
 async function signUp(userData){
-    const existingEmail = await User.findOne({
-        where: { email: userData.email }
-    })
+    const requiredFields = ['nickname', 'email', 'password', 'height', 'mainPosition'];
+    for (let field of requiredFields) {
+        if (!userData[field]) throw new errors.InvalidValue(field);
+    }
 
-    if (existingEmail) throw new errors.ExistingUser('Email')
+    await checkUserExistence('email', userData.email, 'Email')
+    await checkUserExistence('nickname', userData.email, 'Nickname')
 
-    const existingNickname = await User.findOne({
-        where: { nickname: userData.nickname }
-    })
-
-    if (existingNickname) throw new errors.ExistingUser('Nickname')
+    if (!pTypeList.includes(userData.mainPosition)) throw new errors.InvalidValue()
 
     const hashedPassword = await bcrypt.hash(userData.password, 10)
-    await User.create({
-        ...userData,
-        password: hashedPassword
-    })
+    await User.create({...userData, password: hashedPassword})
 }
 
 async function getUserInfo(userId) {
@@ -72,10 +74,12 @@ async function belong(req) {
 
 async function updateInfo(req) {
     const update = req.params.update
-    const avUpdateList = ['nickname', 'height', 'mainPosition']
     if (!avUpdateList.includes(update)) throw new errors.InvalidValue()
+
     const updateValue = req.body[update]
+    if (update === 'mainPosition' && !pTypeList.includes(updateValue)) throw new errors.InvalidValue()
     if (!updateValue) throw new errors.InvalidValue()
+
     await User.updateInfoById(req.user.id, { [update]: updateValue })
 }
 

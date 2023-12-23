@@ -1,4 +1,4 @@
-const { APIError } = require('./error')
+const APIError = require('./error')
 
 class InternalServerError extends APIError {
     constructor() {

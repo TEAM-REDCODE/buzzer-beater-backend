@@ -5,6 +5,7 @@ class APIError extends Error {
         this.statusCode = statusCode
         this.errorCode = errorCode
         this.message = message
+        Object.setPrototypeOf(this, new.target.prototype)
     }
 
     toJson() {
@@ -17,4 +18,4 @@ class APIError extends Error {
     }
 }
 
-module.exports = { APIError }
+module.exports = APIError

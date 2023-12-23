@@ -2,14 +2,11 @@ const { APIError, InternalServerError } = require('../type/errors')
 
 const errorMiddleware = (err, req, res, next) => {
     try {
-        console.log(err instanceof APIError)
-
-        //todo: fix error type
-
         if (!(err instanceof APIError)) {
             err = new InternalServerError(err)
         }
-        res.meta.error = err
+
+        if (err.message === 'Nickname already exists') err.errorCode = 1003
         res.status(err.statusCode).json({
             message: err.message,
             code: err.errorCode,

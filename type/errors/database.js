@@ -1,4 +1,4 @@
-const {APIError} = require("./error")
+const APIError = require("./error")
 
 class UserNotFoundException extends APIError {
     constructor() {
