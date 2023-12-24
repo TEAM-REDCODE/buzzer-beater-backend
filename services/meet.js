@@ -1,5 +1,10 @@
 const errors = require("../type/errors");
-const Meet = require("../models");
+const { Meet } = require("../models");
+
+
+async function isCreatedBy(meet, userId) {
+    return userId === meet.createdById;
+}
 
 async function createMeet(req, meetData) {
     const requiredFields = ['title', 'maxPerson', 'place', 'time']
@@ -31,4 +36,43 @@ async function getMeetList(req) {
     }
 }
 
-module.exports = { createMeet, getMeetList }
+async function register(meetId, userId) {
+    const meet = await Meet.findByPk(meetId)
+    const hasUser = await meet.hasUser(userId)
+
+    if (hasUser) throw new errors.MeetError.hasUserError()
+
+    await meet.addUser(userId)
+
+    const users = await meet.getUsers()
+    meet.count = users.length
+    await meet.save()
+}
+
+async function getMeetInfo(meetId) {
+    return await Meet.findByPk(meetId, {
+        attributes: ['_id', 'title', 'createdByNick', 'maxPerson', 'count', 'place', 'time', 'createdAt', 'updatedAt']
+    })
+}
+
+async function updateMeetInfo(meetId, update, userId) {
+    const meet = await Meet.findByPk(meetId)
+    if (await isCreatedBy(meet, userId)){
+        if (!Object.keys(update).length) throw new errors.InvalidValue()
+        const allowedProperties = ['title', 'maxPerson', 'place', 'time']
+        const invalidProps = Object.keys(update).filter(prop => !allowedProperties.includes(prop))
+        if (invalidProps.length > 0) throw new errors.InvalidValue()
+
+        await Meet.updateMeetInfo(meetId, update)
+    }
+    else throw new errors.MeetError.NotCreatedByError()
+}
+
+async function deleteMeet(meetId, userId) {
+    const meet = await Meet.findByPk(meetId)
+
+    if (await isCreatedBy(meet, userId)) await meet.destroy()
+    else throw new errors.MeetError.NotCreatedByError()
+}
+
+module.exports = { createMeet, getMeetList, register, getMeetInfo, updateMeetInfo, deleteMeet }

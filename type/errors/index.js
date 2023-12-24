@@ -1,17 +1,17 @@
 const APIError = require('./error')
-const { ExistingUser, UnmatchedUser, Unauthorized } = require('./user')
+const UserError = require('./user')
 const InternalServerError = require('./server')
 const UserNotFoundException = require("./database")
 const { JwtCreationError } = require('./jwt')
 const InvalidValue = require('./common')
+const MeetError = require('./meet')
 
 module.exports = {
     APIError,
-    ExistingUser,
-    UnmatchedUser,
-    Unauthorized,
+    UserError,
     InternalServerError,
     UserNotFoundException,
     JwtCreationError,
     InvalidValue,
+    MeetError,
 }

@@ -7,7 +7,7 @@ const { pTypeList, avUpdateList } = require('../constants')
 
 async function checkUserExistence(field, value, errorMessage) {
     const existingUser = await User.findOne({ where: { [field]: value } });
-    if (existingUser) throw new errors.ExistingUser(`${errorMessage} already exists`);
+    if (existingUser) throw new errors.UserError.ExistingUser(`${errorMessage} already exists`);
 }
 
 async function signUp(userData){
@@ -37,7 +37,7 @@ async function login(req, res, email, password){
     const user = await User.findOne({where: {email: email}})
     const passwordMatch = user? await bcrypt.compare(password, user.password): false
 
-    if (!user || !passwordMatch) throw new errors.UnmatchedUser()
+    if (!user || !passwordMatch) throw new errors.UserError.UnmatchedUser()
 
     const refreshToken = await generateRefreshToken(user)
     if (!refreshToken) throw new errors.JwtCreationError()

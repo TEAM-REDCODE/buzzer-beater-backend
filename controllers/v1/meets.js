@@ -1,6 +1,5 @@
 const express = require('express')
 const cookieParser = require('cookie-parser')
-const { Meet } = require('../../models')
 const authenticateUser = require('../../middlewares/authUser')
 const errorMiddleware = require('../../middlewares/error')
 const { MeetService } = require('../../services')
@@ -30,50 +29,23 @@ router.get('/', async (req, res, next) => {
     }
 })
 
-router.get('/:id/reg', authenticateUser, async (req, res) => {
+router.get('/:id/reg', authenticateUser, async (req, res, next) => {
     try {
         const meetId = req.params.id
+        const userId = req.user.id
 
-        const meet = await Meet.findByPk(meetId)
-        const hasUser = await meet.hasUser(req.user.id)
-
-        if (hasUser){
-            return res.status(400).json({
-                ok: false,
-                message: '이미 등록된 회원',
-                dup: true
-            })
-        }
-
-        await meet.addUser(req.user.id)
-
-        const users = await meet.getUsers()
-        meet.count = users.length
-        await meet.save()
-
-        res.status(200).json({
-            ok: true,
-            message: '등록 완료',
-            dup: false
-        })
+        await MeetService.register(meetId, userId)
+        res.status(200).json({message: 'register successful'})
     } catch (error) {
         console.error(error);
-        res.status(500).json({
-            ok: false,
-            message: '등록 중 오류 발생',
-            dup: false
-        });
+        next(error)
     }
 })
 
 router.get('/:id', authenticateUser, async (req, res, next) => {
     try {
-        const reqId = req.params.id
-
-        const meet = await Meet.findByPk(reqId, {
-            attributes: ['_id', 'title', 'createdByNick', 'maxPerson', 'count', 'place', 'time', 'createdAt', 'updatedAt']
-        })
-
+        const meetId = req.params.id
+        const meet = await MeetService.getMeetInfo(meetId)
         res.status(200).json(meet)
     } catch (error) {
         console.error(error)
@@ -83,22 +55,12 @@ router.get('/:id', authenticateUser, async (req, res, next) => {
 
 router.put('/:id', authenticateUser, async (req, res, next) => {
     try {
-        const reqId = req.params.id
-        const meet = await Meet.findByPk(reqId)
+        const meetId = req.params.id
+        const { ...update } = req.body
+        const userId = req.user.id
 
-        if (req.user.id === meet.createdById) {
-            const { ...info } = req.body;
-            if (!Object.keys(info).length) return res.status(400).json({error: "값이 없습니다."})
-            const allowedProperties = ['title', 'maxPerson', 'place', 'time'];
-            const invalidProps = Object.keys(info).filter(prop => !allowedProperties.includes(prop));
-            if (invalidProps.length > 0) {
-                return res.status(400).json({ error: "허용되지 않은 값이 포함되었습니다." })
-            }
-            await Meet.updateMeetInfo(reqId, info)
-            res.status(200).json({ message: "updated successfully!" })
-        } else {
-            res.status(403).json({ error: "Not Allowed to Access" })
-        }
+        await MeetService.updateMeetInfo(meetId, update, userId)
+        res.status(201).json({ message: "updated successfully!" })
     } catch (error) {
         console.error(error)
         next(error)
@@ -107,15 +69,11 @@ router.put('/:id', authenticateUser, async (req, res, next) => {
 
 router.delete('/:id', authenticateUser, async (req, res, next) => {
     try {
-        const reqId = req.params.id
-        const meet = await Meet.findByPk(reqId)
+        const meetId = req.params.id
+        const userId = req.user.id
 
-        if (req.user.id === meet.createdById) {
-            await meet.destroy()
-            res.status(200).json({ message: "deleted successfully!" })
-        } else {
-            res.status(403).json({ error: "Not Allow to Access" })
-        }
+        await MeetService.deleteMeet(meetId, userId)
+
     } catch(error) {
         console.error(error)
         next(error)
