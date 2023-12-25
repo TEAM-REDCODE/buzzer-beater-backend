@@ -27,7 +27,13 @@ module.exports = class Merc extends Sequelize.Model{
     }
 
     static associate(db){
-        db.Merc.belongsTo(db.User, {foreignKey: 'UserId', targetKey:'_id'});
+        db.Merc.belongsTo(db.User, {foreignKey: 'UserId', targetKey:'_id'})
+        db.Merc.belongsToMany(db.Meet, {
+            through: {
+                model: db.MeetMerc,
+                uniqueKey: '_id'
+            }
+        })
     }
 
     static async returnList(page, size, position){

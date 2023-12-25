@@ -53,6 +53,12 @@ module.exports = class Meet extends Sequelize.Model{
                 uniqueKey: '_id'
             }
         })
+        db.Meet.belongsToMany(db.Merc, {
+            through: {
+                model: db.MeetMerc,
+                uniqueKey: '_id'
+            }
+        })
     }
 
     static async returnList(page, size){
