@@ -1,11 +1,11 @@
 const APIError = require("./error")
 
-class UserNotFoundException extends APIError {
+class NotFoundException extends APIError {
     constructor() {
-        super(404, 4004, 'User not found in DB')
-        Object.setPrototypeOf(this, UserNotFoundException.prototype)
-        Error.captureStackTrace(this, UserNotFoundException)
+        super(404, 4004, 'Not found in DB')
+        Object.setPrototypeOf(this, NotFoundException.prototype)
+        Error.captureStackTrace(this, NotFoundException)
     }
 }
 
-module.exports = UserNotFoundException
+module.exports = NotFoundException

@@ -29,7 +29,7 @@ async function getUserInfo(userId) {
     const userInfo = await User.findByPk(userId, {
         attributes: ['nickname', 'email', 'height', 'mainPosition', 'isMercenary', 'createdAt', 'updatedAt']
     })
-    if (!userInfo) throw new errors.UserNotFoundException()
+    if (!userInfo) throw new errors.NotFoundException()
     return userInfo
 }
 
@@ -68,7 +68,7 @@ async function belong(req) {
         })
     }
     else {
-        throw new errors.UserNotFoundException()
+        throw new errors.NotFoundException()
     }
 }
 

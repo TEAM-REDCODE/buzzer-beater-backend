@@ -60,7 +60,7 @@ router.put('/:id', authenticateUser, async (req, res, next) => {
         const userId = req.user.id
 
         await MeetService.updateMeetInfo(meetId, update, userId)
-        res.status(201).json({ message: "updated successfully!" })
+        res.status(204).json({ message: "updated successfully!" })
     } catch (error) {
         console.error(error)
         next(error)
