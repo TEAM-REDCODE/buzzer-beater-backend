@@ -2,7 +2,7 @@ const express = require('express')
 const cookieParser = require('cookie-parser')
 const authenticateUser = require('../../middlewares/authUser')
 const errorMiddleware = require('../../middlewares/error')
-const { MeetService } = require('../../services')
+const { MeetService, MercService} = require('../../services')
 
 const router = express.Router();
 router.use(express.json())
@@ -76,6 +76,36 @@ router.delete('/:id', authenticateUser, async (req, res, next) => {
 
     } catch(error) {
         console.error(error)
+        next(error)
+    }
+})
+
+router.post('/:id/mercs', authenticateUser, async (req, res, next) => {
+    try {
+        const meetId = req.params.id
+        const mercId = req.body.mercId
+        const userId = req.user.id
+        console.log(meetId)
+        console.log(mercId)
+        console.log(userId)
+        await MeetService.callMerc(meetId, mercId, userId)
+
+        res.status(201).json('successful')
+    } catch (error) {
+        console.log(error)
+        next(error)
+    }
+})
+
+router.get('/:id/mercs/:stage', authenticateUser, async (req, res, next) => {
+    try {
+        const meetId = req.params.id
+        const userId = req.user.id
+        const stage = req.params.stage
+
+        res.status(200).json(await MeetService.getMercs(meetId, stage, userId))
+    } catch (error) {
+        console.log(error)
         next(error)
     }
 })

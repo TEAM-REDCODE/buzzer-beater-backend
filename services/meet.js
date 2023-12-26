@@ -1,5 +1,5 @@
 const errors = require("../type/errors");
-const { Meet } = require("../models");
+const { Meet, MeetMerc, Merc, User } = require("../models");
 
 
 async function isCreatedBy(meet, userId) {
@@ -11,6 +11,8 @@ async function createMeet(req, meetData) {
     for (let field of requiredFields) {
         if (!meetData[field]) throw new errors.InvalidValue(field);
     }
+    meetData.createdById = req.user.id
+    meetData.createdByNick = req.user.nickname
 
     const meet = await Meet.create(meetData)
     await meet.addUser(req.user.id);
@@ -75,4 +77,54 @@ async function deleteMeet(meetId, userId) {
     else throw new errors.MeetError.NotCreatedByError()
 }
 
-module.exports = { createMeet, getMeetList, register, getMeetInfo, updateMeetInfo, deleteMeet }
+async function callMerc(meetId, mercId, userId) {
+    const meet = await Meet.findByPk(meetId)
+
+    if (!await isCreatedBy(meet, userId)) throw new errors.UserError.Unauthorized()
+    await meet.addMerc(mercId)
+}
+
+async function getMercs(meetId, stage, userId) {
+    const meet = await Meet.findByPk(meetId)
+
+    if (!await isCreatedBy(meet, userId)) throw new errors.UserError.Unauthorized()
+
+    const stageList = ['ap', 'ac']
+    if (!stageList.includes(stage)) throw new errors.InvalidValue()
+
+    const meetMercs = await MeetMerc.findAll({
+        where: {
+            MeetId: meetId,
+            stage: stage
+        }
+    })
+
+    const mercsPromises = meetMercs.map(meetMerc => Merc.findByPk(meetMerc.MercId, {
+        include: [{
+            model: User,
+            attributes: ['nickname', 'height']
+        }]
+    }))
+    const mercs = await Promise.all(mercsPromises)
+
+    return mercs.map(merc => {
+        return {
+            position: merc.position,
+            avTime: merc.avTime,
+            nickname: merc.User.nickname,
+            height: merc.User.height,
+            stage: stage
+        }
+    })
+}
+
+module.exports = {
+    createMeet,
+    getMeetList,
+    register,
+    getMeetInfo,
+    updateMeetInfo,
+    deleteMeet,
+    callMerc,
+    getMercs,
+}

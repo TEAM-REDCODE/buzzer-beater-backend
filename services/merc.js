@@ -1,5 +1,5 @@
 const errors = require("../type/errors")
-const { User, Merc} = require("../models")
+const { User, Merc, Meet} = require("../models")
 const {pTypeList} = require('../constants')
 async function createMerc(mercData, userId) {
     if (!mercData.position || !mercData.avTime) throw new errors.InvalidValue()

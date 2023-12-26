@@ -7,11 +7,16 @@ module.exports = class MeetMerc extends Sequelize.Model{
                 type: DataTypes.UUID,
                 defaultValue: DataTypes.UUIDV4,
                 primaryKey: true
+            },
+            stage: {
+                type: DataTypes.STRING,
+                defaultValue: 'ap',
+                allowNull: true
             }
         }, {
             sequelize,
             modelName: 'MeetMerc',
-            timestamps: false,
+            timestamps: true,
             // underscored: true
         })
     }
