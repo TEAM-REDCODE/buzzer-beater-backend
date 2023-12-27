@@ -85,9 +85,6 @@ router.post('/:id/mercs', authenticateUser, async (req, res, next) => {
         const meetId = req.params.id
         const mercId = req.body.mercId
         const userId = req.user.id
-        console.log(meetId)
-        console.log(mercId)
-        console.log(userId)
         await MeetService.callMerc(meetId, mercId, userId)
 
         res.status(201).json('successful')

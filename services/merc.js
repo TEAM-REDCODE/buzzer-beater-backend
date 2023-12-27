@@ -1,6 +1,7 @@
 const errors = require("../type/errors")
-const { User, Merc, Meet} = require("../models")
+const { User, Merc, MeetMerc} = require("../models")
 const {pTypeList} = require('../constants')
+
 async function createMerc(mercData, userId) {
     if (!mercData.position || !mercData.avTime) throw new errors.InvalidValue()
     const user = await User.findByPk(userId)
@@ -43,4 +44,26 @@ async function deleteMerc(userId) {
     user.save()
 }
 
-module.exports = { createMerc,  getMercList, deleteMerc}
+async function getMeets(userId) {
+    const user = await User.findByPk(userId)
+    const merc = await user.getMerc()
+    return await merc.getMeets({
+        attributes: ['_id', 'title', 'createdByNick', 'maxPerson', 'count',
+            'place', 'createdAt', 'updatedAt']
+    })
+}
+
+async function changeStage(meetId, userId, stage) {
+    const user = await User.findByPk(userId)
+    const merc = await user.getMerc()
+    const meetMerc = await MeetMerc.findOne({
+        where: {
+            MeetId: meetId
+        }
+    })
+
+    meetMerc.stage = stage
+    await meetMerc.save()
+}
+
+module.exports = { createMerc,  getMercList, deleteMerc, getMeets, changeStage}

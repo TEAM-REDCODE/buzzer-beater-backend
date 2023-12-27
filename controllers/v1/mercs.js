@@ -1,8 +1,9 @@
 const express = require('express')
 const cookieParser = require('cookie-parser')
-const authenticateUser = require("../../middlewares/authUser");
+const authenticateUser = require("../../middlewares/authUser")
+const isMerc = require('../../middlewares/isMerc')
 const errorMiddleware = require('../../middlewares/error')
-const {MercService} = require("../../services");
+const {MercService, MeetService} = require("../../services")
 
 const router = express.Router();
 router.use(express.json())
@@ -16,6 +17,30 @@ router.post('/', authenticateUser, async (req, res, next) => {
         res.status(201).json({message: 'create meet successfully!'});
     } catch (error) {
         console.error(error)
+        next(error)
+    }
+})
+
+router.get('/meets', authenticateUser, isMerc, async (req, res, next) => {
+    try{
+        const meets = await MercService.getMeets(req.user.id)
+        res.status(200).json(meets)
+    } catch (error) {
+        console.log(error)
+        next(error)
+    }
+})
+
+router.get('/meets/:id/reg', authenticateUser, isMerc, async (req, res, next) => {
+    try {
+        const meetId = req.params.id
+        const userId = req.user.id
+
+        await MeetService.register(meetId, userId)
+        await MercService.changeStage(meetId, userId, 'ac')
+        res.status(200).json({message: 'register successful'})
+    } catch (error) {
+        console.log(error)
         next(error)
     }
 })
@@ -34,7 +59,7 @@ router.get('/:position', authenticateUser, async (req, res, next) => {
     }
 })
 
-router.delete('/', authenticateUser, async (req, res, next) => {
+router.delete('/', authenticateUser, isMerc, async (req, res, next) => {
     try{
         await MercService.deleteMerc(req.user.id)
         res.status(200).json({ message: "deleted successfully!" });
@@ -43,8 +68,6 @@ router.delete('/', authenticateUser, async (req, res, next) => {
         next(error)
     }
 })
-
-
 
 
 

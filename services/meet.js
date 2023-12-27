@@ -1,7 +1,6 @@
 const errors = require("../type/errors");
 const { Meet, MeetMerc, Merc, User } = require("../models");
 
-
 async function isCreatedBy(meet, userId) {
     return userId === meet.createdById;
 }
