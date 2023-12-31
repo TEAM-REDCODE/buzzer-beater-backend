@@ -48,8 +48,8 @@ async function getMeets(userId) {
     const user = await User.findByPk(userId)
     const merc = await user.getMerc()
     return await merc.getMeets({
-        attributes: ['_id', 'title', 'createdByNick', 'maxPerson', 'count',
-            'place', 'createdAt', 'updatedAt']
+        attributes: ['_id', 'title', 'createdByNick', 'maxPerson', 'count', 'time'
+            , 'place', 'createdAt', 'updatedAt']
     })
 }
 
