@@ -17,7 +17,6 @@ router.post('/signup', async (req, res, next)=>{
             message: 'User registration successful',
         });
     } catch (error){
-        console.log(error)
         next(error)
     }
 });
@@ -28,7 +27,6 @@ router.get('/', authenticateUser, async (req, res, next) => {
         const user = await UserService.getUserInfo(id)
         res.status(200).json(user)
     } catch (error) {
-        console.error(error)
         next(error)
     }
 })
@@ -43,7 +41,6 @@ router.post('/login', async (req, res, next) => {
             nickname: req.nickname
         });
     } catch (error){
-        console.error(error)
         next(error)
     }
 })
@@ -55,7 +52,6 @@ router.get('/logout', authenticateUser, async (req, res, next) => {
         await UserService.logout(req, res)
         res.status(200).json({ message: 'Logout successful' });
     } catch (error) {
-        console.error(error)
         next(error)
     }
 })
@@ -65,7 +61,6 @@ router.put('/:update', authenticateUser, async (req, res, next) => {
         await UserService.updateInfo(req)
         res.sendStatus(204)
     } catch (error) {
-        console.log(error)
         next(error)
     }
 })
@@ -75,7 +70,6 @@ router.get('/belong', authenticateUser, async (req, res, next) => {
         const meets = await UserService.belong(req)
         res.status(200).json(meets)
     } catch (error) {
-        console.error(error)
         next(error)
     }
 })

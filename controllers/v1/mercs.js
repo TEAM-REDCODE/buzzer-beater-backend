@@ -16,7 +16,6 @@ router.post('/', authenticateUser, async (req, res, next) => {
 
         res.status(201).json({message: 'create meet successfully!'});
     } catch (error) {
-        console.error(error)
         next(error)
     }
 })
@@ -26,7 +25,6 @@ router.get('/meets', authenticateUser, isMerc, async (req, res, next) => {
         const meets = await MercService.getMeets(req.user.id)
         res.status(200).json(meets)
     } catch (error) {
-        console.log(error)
         next(error)
     }
 })
@@ -40,7 +38,6 @@ router.get('/meets/:id/reg', authenticateUser, isMerc, async (req, res, next) =>
         await MercService.changeStage(meetId, userId, 'ac')
         res.status(200).json({message: 'register successful'})
     } catch (error) {
-        console.log(error)
         next(error)
     }
 })
@@ -54,7 +51,6 @@ router.get('/:position', authenticateUser, async (req, res, next) => {
 
         res.status(200).json(mercList)
     } catch (error) {
-        console.error(error)
         next(error)
     }
 })
@@ -64,7 +60,6 @@ router.delete('/', authenticateUser, isMerc, async (req, res, next) => {
         await MercService.deleteMerc(req.user.id)
         res.status(200).json({ message: "deleted successfully!" });
     } catch (error) {
-        console.error(error)
         next(error)
     }
 })

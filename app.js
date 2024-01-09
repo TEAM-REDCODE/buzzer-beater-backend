@@ -14,3 +14,13 @@ const { sequelize } = require('./models');
             console.error(err);
         });
 })();
+
+process.on('uncaughtException', (err) => {
+    console.error('처리되지 않은 오류 발생', err);
+    process.exit(1); // Node.js 문서에 따라 필수
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('처리되지 않은 거부:', promise, '이유:', reason);
+    // 애플리케이션 특정 로깅, 오류 발생, 또는 기타 로직
+});

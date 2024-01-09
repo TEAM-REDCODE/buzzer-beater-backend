@@ -14,7 +14,6 @@ router.post('/', authenticateUser, async (req, res, next) => {
         await MeetService.createMeet(req, meetData)
         res.status(201).json({message: 'create meet successfully!'});
     } catch (error) {
-        console.error(error)
         next(error)
     }
 })
@@ -24,7 +23,6 @@ router.get('/', async (req, res, next) => {
         const meetList = await MeetService.getMeetList(req)
         res.status(200).json(meetList)
     } catch (error) {
-        console.error(error)
         next(error)
     }
 })
@@ -37,7 +35,6 @@ router.get('/:id/reg', authenticateUser, async (req, res, next) => {
         await MeetService.register(meetId, userId)
         res.status(200).json({message: 'register successful'})
     } catch (error) {
-        console.error(error);
         next(error)
     }
 })
@@ -48,7 +45,6 @@ router.get('/:id', authenticateUser, async (req, res, next) => {
         const meet = await MeetService.getMeetInfo(meetId)
         res.status(200).json(meet)
     } catch (error) {
-        console.error(error)
         next(error)
     }
 })
@@ -62,7 +58,6 @@ router.put('/:id', authenticateUser, async (req, res, next) => {
         await MeetService.updateMeetInfo(meetId, update, userId)
         res.status(204).json({ message: "updated successfully!" })
     } catch (error) {
-        console.error(error)
         next(error)
     }
 })
@@ -75,7 +70,6 @@ router.delete('/:id', authenticateUser, async (req, res, next) => {
         await MeetService.deleteMeet(meetId, userId)
 
     } catch(error) {
-        console.error(error)
         next(error)
     }
 })
@@ -89,7 +83,6 @@ router.post('/:id/mercs', authenticateUser, async (req, res, next) => {
 
         res.status(201).json('successful')
     } catch (error) {
-        console.log(error)
         next(error)
     }
 })
@@ -102,7 +95,6 @@ router.get('/:id/mercs/:stage', authenticateUser, async (req, res, next) => {
 
         res.status(200).json(await MeetService.getMercs(meetId, stage, userId))
     } catch (error) {
-        console.log(error)
         next(error)
     }
 })

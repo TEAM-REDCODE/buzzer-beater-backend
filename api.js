@@ -1,6 +1,7 @@
 const express = require('express')
 const http = require('http');
 const controllers = require('./controllers')
+const {loggerMiddleware} = require("./utils/logger");
 
 require('dotenv').config()
 const PORT = process.env.PORT || 5000
@@ -10,8 +11,14 @@ module.exports = class API {
         this.app = express()
         this.server = http.createServer(this.app)
 
+        this.setPreMiddleware()
         this.setController()
     }
+
+    setPreMiddleware() {
+        this.app.use(loggerMiddleware)
+    }
+
     setController(){
         this.app.use('/v1/users', controllers.v1.users)
         this.app.use('/v1/meets', controllers.v1.meets)
